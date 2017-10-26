@@ -23,6 +23,7 @@ metadata {
 		capability "Refresh"
 		capability "Temperature Measurement"
 		capability "Health Check"
+		capability "Sensor"
 
 		command "enrollResponse"
 
@@ -39,13 +40,15 @@ metadata {
 		input "tempOffset", "number", title: "Degrees", description: "Adjust temperature by this many degrees", range: "*..*", displayDuringSetup: false
 	}
 
-	tiles {
-    	standardTile("contact", "device.contact", width: 2, height: 2) {
-			state("open", label:'${name}', icon:"st.contact.contact.open", backgroundColor:"#ffa81e")
-			state("closed", label:'${name}', icon:"st.contact.contact.closed", backgroundColor:"#79b821")
+	tiles(scale: 2) {
+		multiAttributeTile(name:"contact", type: "generic", width: 6, height: 4){
+			tileAttribute ("device.contact", key: "PRIMARY_CONTROL") {
+				attributeState("open", label: '${name}', icon: "st.contact.contact.open", backgroundColor: "#e86d13")
+				attributeState("closed", label: '${name}', icon: "st.contact.contact.closed", backgroundColor: "#00A0DC")
+			}
 		}
 
-		valueTile("temperature", "device.temperature", inactiveLabel: false) {
+		valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
 			state "temperature", label:'${currentValue}°',
 				backgroundColors:[
 					[value: 31, color: "#153591"],
@@ -57,15 +60,15 @@ metadata {
 					[value: 96, color: "#bc2323"]
 				]
 		}
-		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false) {
+		valueTile("battery", "device.battery", decoration: "flat", inactiveLabel: false, width: 2, height: 2) {
 			state "battery", label:'${currentValue}% battery', unit:""
 		}
 
-        standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat") {
+       		standardTile("refresh", "device.refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "default", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 
-		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat") {
+		standardTile("configure", "device.configure", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 			state "configure", label:'', action:"configuration.configure", icon:"st.secondary.configure"
 		}
 
@@ -181,22 +184,17 @@ private Map getBatteryResult(rawValue) {
 	log.debug 'Battery'
 	def linkText = getLinkText(device)
 
-    def result = [
-    	name: 'battery'
-    ]
+    def result = [:]
 
-	def volts = rawValue / 10
-	def descriptionText
-	if (volts > 3.5) {
-		result.descriptionText = "${linkText} battery has too much power (${volts} volts)."
-	}
-	else {
+	if (!(rawValue == 0 || rawValue == 255)) {
+		def volts = rawValue / 10
 		def minVolts = 2.1
-    	def maxVolts = 3.0
+		def maxVolts = 3.0
 		def pct = (volts - minVolts) / (maxVolts - minVolts)
 		def roundedPct = Math.round(pct * 100)
 		result.value = Math.min(100, roundedPct)
 		result.descriptionText = "${linkText} battery was ${result.value}%"
+		result.name = 'battery'
 	}
 
 	return result
